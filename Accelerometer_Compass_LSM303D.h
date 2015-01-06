@@ -1,33 +1,42 @@
-/*
- * A library for LSM303D based Acc&Compass Grove
- *
- * Copyright (c) 2012 Seeed Technology Limited
- * Website    : www.seeed.cc
- * Author     : Jacky Zhang
- * Create Time: Dec 2014
- * Change Log :
- *
- * The MIT License (MIT)
- *
- * Permission is hereby granted, free of charge, to any person obtaining a copy
- * of this software and associated documentation files (the "Software"), to deal
- * in the Software without restriction, including without limitation the rights
- * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
- * copies of the Software, and to permit persons to whom the Software is
- * furnished to do so, subject to the following conditions:
- *
- * The above copyright notice and this permission notice shall be included in
- * all copies or substantial portions of the Software.
- *
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
- * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
- * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
- * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
- * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
- * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
- * THE SOFTWARE.
- */
- 
+/* LSM303DLM Example Code base on LSM303DLH example code by Jim Lindblom SparkFun Electronics
+   
+   date: 9/6/11
+   license: Creative commons share-alike v3.0
+   
+   Modified by:Frankie.Chu
+   Modified by:Jacky.Zhang 2014-12-11: Ported to 6-Axis Accelerometer&Compass of Seeed Studio
+   Modified by:Jacky.Zhang 2015-1-6: added SPI driver
+   
+   Summary:
+   Show how to calculate level and tilt-compensated heading using
+   the snazzy LSM303DLH 3-axis magnetometer/3-axis accelerometer.
+   
+   Firmware:
+   You can set the accelerometer's full-scale range by setting
+   the SCALE constant to either 2, 4, or 8. This value is used
+   in the initLSM303() function. For the most part, all other
+   registers in the LSM303 will be at their default value.
+   
+   Use the write() and read() functions to write
+   to and read from the LSM303's internal registers.
+   
+   Use getLSM303_accel() and getLSM303_mag() to get the acceleration
+   and magneto values from the LSM303. You'll need to pass each of
+   those functions an array, where the data will be stored upon
+   return from the void.
+   
+   getHeading() calculates a heading assuming the sensor is level.
+   A float between 0 and 360 is returned. You need to pass it a
+   array with magneto values. 
+   
+   getTiltHeading() calculates a tilt-compensated heading.
+   A float between 0 and 360 degrees is returned. You need
+   to pass this function both a magneto and acceleration array.
+   
+   Headings are calculated as specified in AN3192:
+   http://www.sparkfun.com/datasheets/Sensors/Magneto/Tilt%20Compensated%20Compass.pdf
+*/
+
 #ifndef Accelerometer_Compass_LSM303D_H
 #define Accelerometer_Compass_LSM303D_H
 
@@ -43,7 +52,9 @@ class LSM303D
 {
 	public:
 
-		char init();
+		char initI2C();
+        char initSPI(char cspin);
+        char config();
 		unsigned char read(unsigned char address);
 		void write(unsigned char data, unsigned char address);
 		char isMagReady();
@@ -52,6 +63,8 @@ class LSM303D
 		float getHeading(int * magValue);
 		float getTiltHeading(int * magValue, float * accelValue);
 	private:
+        unsigned char _mode;
+        unsigned char _cs;
 };
 
 extern  LSM303D Lsm303d;

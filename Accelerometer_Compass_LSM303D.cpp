@@ -1,35 +1,64 @@
+/* LSM303DLM Example Code base on LSM303DLH example code by Jim Lindblom SparkFun Electronics
+   
+   date: 9/6/11
+   license: Creative commons share-alike v3.0
+   
+   Modified by:Frankie.Chu
+   Modified by:Jacky.Zhang 2014-12-11: Ported to 6-Axis Accelerometer&Compass of Seeed Studio
+   Modified by:Jacky.Zhang 2015-1-6: added SPI driver
+   
+   Summary:
+   Show how to calculate level and tilt-compensated heading using
+   the snazzy LSM303DLH 3-axis magnetometer/3-axis accelerometer.
+   
+   Firmware:
+   You can set the accelerometer's full-scale range by setting
+   the SCALE constant to either 2, 4, or 8. This value is used
+   in the initLSM303() function. For the most part, all other
+   registers in the LSM303 will be at their default value.
+   
+   Use the write() and read() functions to write
+   to and read from the LSM303's internal registers.
+   
+   Use getLSM303_accel() and getLSM303_mag() to get the acceleration
+   and magneto values from the LSM303. You'll need to pass each of
+   those functions an array, where the data will be stored upon
+   return from the void.
+   
+   getHeading() calculates a heading assuming the sensor is level.
+   A float between 0 and 360 is returned. You need to pass it a
+   array with magneto values. 
+   
+   getTiltHeading() calculates a tilt-compensated heading.
+   A float between 0 and 360 degrees is returned. You need
+   to pass this function both a magneto and acceleration array.
+   
+   Headings are calculated as specified in AN3192:
+   http://www.sparkfun.com/datasheets/Sensors/Magneto/Tilt%20Compensated%20Compass.pdf
+*/
+
 /*
- * A library for LSM303D based Acc&Compass Grove
- *
- * Copyright (c) 2012 Seeed Technology Limited
- * Website    : www.seeed.cc
- * Author     : Jacky Zhang
- * Create Time: Dec 2014
- * Change Log :
- *
- * The MIT License (MIT)
- *
- * Permission is hereby granted, free of charge, to any person obtaining a copy
- * of this software and associated documentation files (the "Software"), to deal
- * in the Software without restriction, including without limitation the rights
- * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
- * copies of the Software, and to permit persons to whom the Software is
- * furnished to do so, subject to the following conditions:
- *
- * The above copyright notice and this permission notice shall be included in
- * all copies or substantial portions of the Software.
- *
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
- * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
- * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
- * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
- * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
- * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
- * THE SOFTWARE.
- */
+hardware & software comment
+
+I2C mode:
+1, solder the jumper "I2C EN" and the jumper of ADDR to 0x1E
+2, use Lsm303d.initI2C() function to initialize the Grove by I2C
+
+SPI mode:
+
+1, break the jumper "I2C_EN" and the jumper ADDR to any side
+2, define a pin as chip select for SPI protocol.
+3, use Lsm303d.initSPI(SPI_CS) function to initialize the Grove by SPI
+SPI.h sets these for us in arduino
+const int SDI = 11;
+const int SDO = 12;
+const int SCL = 13;
+*/
+
 
 #include <Accelerometer_Compass_LSM303D.h>
 #include <Wire.h>
+#include <SPI.h>
 
 /* LSM303 Address definitions */
 #define LSM303D_ADDR  0x1E  // assuming SA0 grounded
@@ -96,13 +125,42 @@
 #define MAG_SCALE_4 	0x20//+/-4Gauss
 #define MAG_SCALE_8 	0x40//+/-8Gauss
 #define MAG_SCALE_12 	0x60//+/-12Gauss
- 
-char LSM303D::init()
+
+byte Read  = 0B10000000;
+byte Write = 0B00000000;
+
+//I2C mode
+char LSM303D::initI2C()
 {
 	char rtn = -1;
-	
+    
+    _mode = 0;//I2C mode
 	Wire.begin();  // Start up I2C, required for LSM303 communication
-	if(read(WHO_AM_I) != 0x49) return rtn; // return wrong if no LSM303D was found 
+	rtn = config();
+    
+	return rtn;
+}
+
+//SPI mode
+char LSM303D::initSPI(char cspin)
+{
+	char rtn = -1;
+    
+    _mode = 1;//SPI mode
+    _cs = cspin;
+    pinMode(_cs, OUTPUT);//initialize the chip select pins;
+    SPI.begin();//start the SPI library;
+    rtn = config();
+    
+	return rtn;
+}
+
+char LSM303D::config()
+{
+    char rtn = -1;
+    
+    if(read(WHO_AM_I) != 0x49) return rtn; // return wrong if no LSM303D was found 
+    
 	write(0x57, CTRL_REG1);  // 0x57 = ODR=50hz, all accel axes on
 	write((3<<6)|(0<<3), CTRL_REG2);  // set full-scale
 	write(0x00, CTRL_REG3);  // no interrupt
@@ -111,37 +169,59 @@ char LSM303D::init()
 	write(MAG_SCALE_2, CTRL_REG6); //magnetic scale = +/-1.3Gauss
 	write(0x00, CTRL_REG7);  // 0x00 = continouous conversion mode
 	rtn = 0;
+    
 	return rtn;
 }
 
 unsigned char LSM303D::read(unsigned char address)
 {
-	char temp;
-
-	Wire.beginTransmission(LSM303D_ADDR);
-	Wire.write(address);
-	Wire.endTransmission();
-
-	Wire.requestFrom(LSM303D_ADDR, 1);
-	while(!Wire.available());
-	temp = Wire.read();
-	Wire.endTransmission();
-
+	char temp = 0x00;
+    
+    if(_mode == 0)//I2C mode
+    {
+        Wire.beginTransmission(LSM303D_ADDR);
+        Wire.write(address);
+        Wire.endTransmission();
+        Wire.requestFrom(LSM303D_ADDR, 1);
+        while(!Wire.available());
+        temp = Wire.read();
+        Wire.endTransmission();
+    }
+    else//SPI Mode
+    {
+        digitalWrite(_cs, LOW); 
+        SPI.transfer(Read | address);
+        temp = SPI.transfer(0x00);
+        digitalWrite(_cs, HIGH);
+    }
+    
 	return temp;
 }
 
 void LSM303D::write(unsigned char data, unsigned char address)
 {
-	Wire.beginTransmission(LSM303D_ADDR); 
-	Wire.write(address);
-	Wire.write(data);
-	Wire.endTransmission();
+    if(_mode == 0)
+    {
+        Wire.beginTransmission(LSM303D_ADDR); 
+        Wire.write(address);
+        Wire.write(data);
+        Wire.endTransmission();
+    }
+    else
+    {
+        digitalWrite(_cs, LOW);
+        SPI.transfer(Write | address);
+        SPI.transfer(data);
+        digitalWrite(_cs, HIGH);
+    }
 }
 
 char LSM303D::isMagReady()
 {
 	char temp;
+    
 	temp = read(STATUS_REG_M) & 0x03;
+    
 	return temp;
 }
 
