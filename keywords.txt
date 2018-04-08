@@ -1,0 +1,29 @@
+  
+#######################################
+# Syntax Coloring Map For 
+#######################################
+
+#######################################
+# Datatypes (KEYWORD1)
+#######################################
+
+
+
+#######################################
+# Methods and Functions (KEYWORD2)
+#######################################
+LSM303D	KEYWORD2
+initI2C	KEYWORD2
+initSPI	KEYWORD2
+config	KEYWORD2
+char	KEYWORD2
+write	KEYWORD2
+isMagReady	KEYWORD2
+getMag	KEYWORD2
+getAccel	KEYWORD2
+getHeading	KEYWORD2
+getTiltHeading	KEYWORD2
+
+#######################################
+# Constants (LITERAL1)
+#######################################
