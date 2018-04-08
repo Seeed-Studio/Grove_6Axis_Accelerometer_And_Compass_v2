@@ -55,7 +55,7 @@ const int SDO = 12;
 const int SCL = 13;
 */
 
-#include <Accelerometer_Compass_LSM303D.h>
+#include <LSM303D.h>
 #include <Wire.h>
 #include <SPI.h>
 
