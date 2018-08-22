@@ -72,8 +72,8 @@ void setup()
 	char rtn = 0;
     Serial.begin(9600);  // Serial is used for debugging
     Serial.println("\r\npower on");
-    //rtn = Lsm303d.initI2C();
-    rtn = Lsm303d.initSPI(SPI_CS);
+    rtn = Lsm303d.initI2C();
+    //rtn = Lsm303d.initSPI(SPI_CS);
     if(rtn != 0)  // Initialize the LSM303, using a SCALE full-scale range
 	{
 		Serial.println("\r\nLSM303D is not found");
