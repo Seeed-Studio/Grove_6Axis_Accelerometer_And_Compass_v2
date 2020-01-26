@@ -58,10 +58,10 @@ class LSM303D
 		unsigned char read(unsigned char address);
 		void write(unsigned char data, unsigned char address);
 		char isMagReady();
-		void getMag(int * rawValues);
-		void getAccel(int * rawValues);
-		float getHeading(int * magValue);
-		float getTiltHeading(int * magValue, float * accelValue);
+		void getMag(int16_t * rawValues);
+		void getAccel(int16_t * rawValues);
+		float getHeading(int16_t * magValue);
+		float getTiltHeading(int16_t * magValue, float * accelValue);
 	private:
         unsigned char _mode;
         unsigned char _cs;

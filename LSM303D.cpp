@@ -50,9 +50,9 @@ SPI mode:
 2, define a pin as chip select for SPI protocol.
 3, use Lsm303d.initSPI(SPI_CS) function to initialize the Grove by SPI
 SPI.h sets these for us in arduino
-const int SDI = 11;
-const int SDO = 12;
-const int SCL = 13;
+const int16_t SDI = 11;
+const int16_t SDO = 12;
+const int16_t SCL = 13;
 */
 
 
@@ -225,21 +225,21 @@ char LSM303D::isMagReady()
 	return temp;
 }
 
-void LSM303D::getMag(int * rawValues)
+void LSM303D::getMag(int16_t * rawValues)
 {
-	rawValues[X] = ((int)read(OUT_X_H_M) << 8) | (read(OUT_X_L_M));
-	rawValues[Y] = ((int)read(OUT_Y_H_M) << 8) | (read(OUT_Y_L_M));
-	rawValues[Z] = ((int)read(OUT_Z_H_M) << 8) | (read(OUT_Z_L_M));
+	rawValues[X] = ((int16_t)read(OUT_X_H_M) << 8) | (read(OUT_X_L_M));
+	rawValues[Y] = ((int16_t)read(OUT_Y_H_M) << 8) | (read(OUT_Y_L_M));
+	rawValues[Z] = ((int16_t)read(OUT_Z_H_M) << 8) | (read(OUT_Z_L_M));
 }
 
-void LSM303D::getAccel(int * rawValues)
+void LSM303D::getAccel(int16_t * rawValues)
 {
-	rawValues[X] = ((int)read(OUT_X_H_A) << 8) | (read(OUT_X_L_A));
-	rawValues[Y] = ((int)read(OUT_Y_H_A) << 8) | (read(OUT_Y_L_A));
-	rawValues[Z] = ((int)read(OUT_Z_H_A) << 8) | (read(OUT_Z_L_A));
+	rawValues[X] = ((int16_t)read(OUT_X_H_A) << 8) | (read(OUT_X_L_A));
+	rawValues[Y] = ((int16_t)read(OUT_Y_H_A) << 8) | (read(OUT_Y_L_A));
+	rawValues[Z] = ((int16_t)read(OUT_Z_H_A) << 8) | (read(OUT_Z_L_A));
 }
 
-float LSM303D::getHeading(int * magValue)
+float LSM303D::getHeading(int16_t * magValue)
 {
 	// see section 1.2 in app note AN3192
 	float heading = 180*atan2(magValue[Y], magValue[X])/PI;  // assume pitch, roll are 0
@@ -250,7 +250,7 @@ float LSM303D::getHeading(int * magValue)
 	return heading;
 }
 
-float LSM303D::getTiltHeading(int * magValue, float * accelValue)
+float LSM303D::getTiltHeading(int16_t * magValue, float * accelValue)
 {
 	// see appendix A in app note AN3192 
 	float pitch = asin(-accelValue[X]);
