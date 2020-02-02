@@ -1,5 +1,4 @@
 /*  LSM303DLM Example Code base on LSM303DLH example code by Jim Lindblom SparkFun Electronics
-
     date: 9/6/11
     license: Creative commons share-alike v3.0
 
