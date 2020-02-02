@@ -1,58 +1,58 @@
-/* LSM303DLM Example Code base on LSM303DLH example code by Jim Lindblom SparkFun Electronics
+/*  LSM303DLM Example Code base on LSM303DLH example code by Jim Lindblom SparkFun Electronics
 
-   date: 9/6/11
-   license: Creative commons share-alike v3.0
+    date: 9/6/11
+    license: Creative commons share-alike v3.0
 
-   Modified by:Frankie.Chu
-   Modified by:Jacky.Zhang 2014-12-11: Ported to 6-Axis Accelerometer&Compass of Seeed Studio
-   Modified by:Jacky.Zhang 2015-1-6: added SPI driver
+    Modified by:Frankie.Chu
+    Modified by:Jacky.Zhang 2014-12-11: Ported to 6-Axis Accelerometer&Compass of Seeed Studio
+    Modified by:Jacky.Zhang 2015-1-6: added SPI driver
 
-   Summary:
-   Show how to calculate level and tilt-compensated heading using
-   the snazzy LSM303DLH 3-axis magnetometer/3-axis accelerometer.
+    Summary:
+    Show how to calculate level and tilt-compensated heading using
+    the snazzy LSM303DLH 3-axis magnetometer/3-axis accelerometer.
 
-   Firmware:
-   You can set the accelerometer's full-scale range by setting
-   the SCALE constant to either 2, 4, or 8. This value is used
-   in the initLSM303() function. For the most part, all other
-   registers in the LSM303 will be at their default value.
+    Firmware:
+    You can set the accelerometer's full-scale range by setting
+    the SCALE constant to either 2, 4, or 8. This value is used
+    in the initLSM303() function. For the most part, all other
+    registers in the LSM303 will be at their default value.
 
-   Use the write() and read() functions to write
-   to and read from the LSM303's internal registers.
+    Use the write() and read() functions to write
+    to and read from the LSM303's internal registers.
 
-   Use getLSM303_accel() and getLSM303_mag() to get the acceleration
-   and magneto values from the LSM303. You'll need to pass each of
-   those functions an array, where the data will be stored upon
-   return from the void.
+    Use getLSM303_accel() and getLSM303_mag() to get the acceleration
+    and magneto values from the LSM303. You'll need to pass each of
+    those functions an array, where the data will be stored upon
+    return from the void.
 
-   getHeading() calculates a heading assuming the sensor is level.
-   A float between 0 and 360 is returned. You need to pass it a
-   array with magneto values.
+    getHeading() calculates a heading assuming the sensor is level.
+    A float between 0 and 360 is returned. You need to pass it a
+    array with magneto values.
 
-   getTiltHeading() calculates a tilt-compensated heading.
-   A float between 0 and 360 degrees is returned. You need
-   to pass this function both a magneto and acceleration array.
+    getTiltHeading() calculates a tilt-compensated heading.
+    A float between 0 and 360 degrees is returned. You need
+    to pass this function both a magneto and acceleration array.
 
-   Headings are calculated as specified in AN3192:
-   http://www.sparkfun.com/datasheets/Sensors/Magneto/Tilt%20Compensated%20Compass.pdf
+    Headings are calculated as specified in AN3192:
+    http://www.sparkfun.com/datasheets/Sensors/Magneto/Tilt%20Compensated%20Compass.pdf
 */
 
 /*
-  hardware & software comment
+    hardware & software comment
 
-  I2C mode:
-  1, solder the jumper "I2C EN" and the jumper of ADDR to 0x1E
-  2, use Lsm303d.initI2C() function to initialize the Grove by I2C
+    I2C mode:
+    1, solder the jumper "I2C EN" and the jumper of ADDR to 0x1E
+    2, use Lsm303d.initI2C() function to initialize the Grove by I2C
 
-  SPI mode:
+    SPI mode:
 
-  1, break the jumper "I2C_EN" and the jumper ADDR to any side
-  2, define a pin as chip select for SPI protocol.
-  3, use Lsm303d.initSPI(SPI_CS) function to initialize the Grove by SPI
-  SPI.h sets these for us in arduino
-  const int16_t SDI = 11;
-  const int16_t SDO = 12;
-  const int16_t SCL = 13;
+    1, break the jumper "I2C_EN" and the jumper ADDR to any side
+    2, define a pin as chip select for SPI protocol.
+    3, use Lsm303d.initSPI(SPI_CS) function to initialize the Grove by SPI
+    SPI.h sets these for us in arduino
+    const int16_t SDI = 11;
+    const int16_t SDO = 12;
+    const int16_t SCL = 13;
 */
 
 
@@ -131,128 +131,128 @@ byte Write = 0B00000000;
 
 //I2C mode
 char LSM303D::initI2C() {
-  char rtn = -1;
+    char rtn = -1;
 
-  _mode = 0;//I2C mode
-  Wire.begin();  // Start up I2C, required for LSM303 communication
-  rtn = config();
+    _mode = 0;//I2C mode
+    Wire.begin();  // Start up I2C, required for LSM303 communication
+    rtn = config();
 
-  return rtn;
+    return rtn;
 }
 
 //SPI mode
 char LSM303D::initSPI(char cspin) {
-  char rtn = -1;
+    char rtn = -1;
 
-  _mode = 1;//SPI mode
-  _cs = cspin;
-  pinMode(_cs, OUTPUT);//initialize the chip select pins;
-  SPI.begin();//start the SPI library;
-  rtn = config();
+    _mode = 1;//SPI mode
+    _cs = cspin;
+    pinMode(_cs, OUTPUT);//initialize the chip select pins;
+    SPI.begin();//start the SPI library;
+    rtn = config();
 
-  return rtn;
+    return rtn;
 }
 
 char LSM303D::config() {
-  char rtn = -1;
+    char rtn = -1;
 
-  if (read(WHO_AM_I) != 0x49) {
-    return rtn;  // return wrong if no LSM303D was found
-  }
+    if (read(WHO_AM_I) != 0x49) {
+        return rtn;  // return wrong if no LSM303D was found
+    }
 
-  write(0x57, CTRL_REG1);  // 0x57 = ODR=50hz, all accel axes on
-  write((3 << 6) | (0 << 3), CTRL_REG2); // set full-scale
-  write(0x00, CTRL_REG3);  // no interrupt
-  write(0x00, CTRL_REG4);  // no interrupt
-  write((4 << 2), CTRL_REG5); // 0x10 = mag 50Hz output rate
-  write(MAG_SCALE_2, CTRL_REG6); //magnetic scale = +/-1.3Gauss
-  write(0x00, CTRL_REG7);  // 0x00 = continouous conversion mode
-  rtn = 0;
+    write(0x57, CTRL_REG1);  // 0x57 = ODR=50hz, all accel axes on
+    write((3 << 6) | (0 << 3), CTRL_REG2); // set full-scale
+    write(0x00, CTRL_REG3);  // no interrupt
+    write(0x00, CTRL_REG4);  // no interrupt
+    write((4 << 2), CTRL_REG5); // 0x10 = mag 50Hz output rate
+    write(MAG_SCALE_2, CTRL_REG6); //magnetic scale = +/-1.3Gauss
+    write(0x00, CTRL_REG7);  // 0x00 = continouous conversion mode
+    rtn = 0;
 
-  return rtn;
+    return rtn;
 }
 
 unsigned char LSM303D::read(unsigned char address) {
-  char temp = 0x00;
+    char temp = 0x00;
 
-  if (_mode == 0) { //I2C mode
-    Wire.beginTransmission(LSM303D_ADDR);
-    Wire.write(address);
-    Wire.endTransmission();
-    Wire.requestFrom(LSM303D_ADDR, 1);
-    while (!Wire.available());
-    temp = Wire.read();
-    Wire.endTransmission();
-  } else { //SPI Mode
-    digitalWrite(_cs, LOW);
-    SPI.transfer(Read | address);
-    temp = SPI.transfer(0x00);
-    digitalWrite(_cs, HIGH);
-  }
+    if (_mode == 0) { //I2C mode
+        Wire.beginTransmission(LSM303D_ADDR);
+        Wire.write(address);
+        Wire.endTransmission();
+        Wire.requestFrom(LSM303D_ADDR, 1);
+        while (!Wire.available());
+        temp = Wire.read();
+        Wire.endTransmission();
+    } else { //SPI Mode
+        digitalWrite(_cs, LOW);
+        SPI.transfer(Read | address);
+        temp = SPI.transfer(0x00);
+        digitalWrite(_cs, HIGH);
+    }
 
-  return temp;
+    return temp;
 }
 
 void LSM303D::write(unsigned char data, unsigned char address) {
-  if (_mode == 0) {
-    Wire.beginTransmission(LSM303D_ADDR);
-    Wire.write(address);
-    Wire.write(data);
-    Wire.endTransmission();
-  } else {
-    digitalWrite(_cs, LOW);
-    SPI.transfer(Write | address);
-    SPI.transfer(data);
-    digitalWrite(_cs, HIGH);
-  }
+    if (_mode == 0) {
+        Wire.beginTransmission(LSM303D_ADDR);
+        Wire.write(address);
+        Wire.write(data);
+        Wire.endTransmission();
+    } else {
+        digitalWrite(_cs, LOW);
+        SPI.transfer(Write | address);
+        SPI.transfer(data);
+        digitalWrite(_cs, HIGH);
+    }
 }
 
 char LSM303D::isMagReady() {
-  char temp;
+    char temp;
 
-  temp = read(STATUS_REG_M) & 0x03;
+    temp = read(STATUS_REG_M) & 0x03;
 
-  return temp;
+    return temp;
 }
 
 void LSM303D::getMag(int16_t* rawValues) {
-  rawValues[X] = ((int16_t)read(OUT_X_H_M) << 8) | (read(OUT_X_L_M));
-  rawValues[Y] = ((int16_t)read(OUT_Y_H_M) << 8) | (read(OUT_Y_L_M));
-  rawValues[Z] = ((int16_t)read(OUT_Z_H_M) << 8) | (read(OUT_Z_L_M));
+    rawValues[X] = ((int16_t)read(OUT_X_H_M) << 8) | (read(OUT_X_L_M));
+    rawValues[Y] = ((int16_t)read(OUT_Y_H_M) << 8) | (read(OUT_Y_L_M));
+    rawValues[Z] = ((int16_t)read(OUT_Z_H_M) << 8) | (read(OUT_Z_L_M));
 }
 
 void LSM303D::getAccel(int16_t* rawValues) {
-  rawValues[X] = ((int16_t)read(OUT_X_H_A) << 8) | (read(OUT_X_L_A));
-  rawValues[Y] = ((int16_t)read(OUT_Y_H_A) << 8) | (read(OUT_Y_L_A));
-  rawValues[Z] = ((int16_t)read(OUT_Z_H_A) << 8) | (read(OUT_Z_L_A));
+    rawValues[X] = ((int16_t)read(OUT_X_H_A) << 8) | (read(OUT_X_L_A));
+    rawValues[Y] = ((int16_t)read(OUT_Y_H_A) << 8) | (read(OUT_Y_L_A));
+    rawValues[Z] = ((int16_t)read(OUT_Z_H_A) << 8) | (read(OUT_Z_L_A));
 }
 
 float LSM303D::getHeading(int16_t* magValue) {
-  // see section 1.2 in app note AN3192
-  float heading = 180 * atan2(magValue[Y], magValue[X]) / PI; // assume pitch, roll are 0
+    // see section 1.2 in app note AN3192
+    float heading = 180 * atan2(magValue[Y], magValue[X]) / PI; // assume pitch, roll are 0
 
-  if (heading < 0) {
-    heading += 360;
-  }
+    if (heading < 0) {
+        heading += 360;
+    }
 
-  return heading;
+    return heading;
 }
 
 float LSM303D::getTiltHeading(int16_t* magValue, float* accelValue) {
-  // see appendix A in app note AN3192
-  float pitch = asin(-accelValue[X]);
-  float roll = asin(accelValue[Y] / cos(pitch));
+    // see appendix A in app note AN3192
+    float pitch = asin(-accelValue[X]);
+    float roll = asin(accelValue[Y] / cos(pitch));
 
-  float xh = magValue[X] * cos(pitch) + magValue[Z] * sin(pitch);
-  float yh = magValue[X] * sin(roll) * sin(pitch) + magValue[Y] * cos(roll) - magValue[Z] * sin(roll) * cos(pitch);
-  float zh = -magValue[X] * cos(roll) * sin(pitch) + magValue[Y] * sin(roll) + magValue[Z] * cos(roll) * cos(pitch);
-  float heading = 180 * atan2(yh, xh) / PI;
+    float xh = magValue[X] * cos(pitch) + magValue[Z] * sin(pitch);
+    float yh = magValue[X] * sin(roll) * sin(pitch) + magValue[Y] * cos(roll) - magValue[Z] * sin(roll) * cos(pitch);
+    float zh = -magValue[X] * cos(roll) * sin(pitch) + magValue[Y] * sin(roll) + magValue[Z] * cos(roll) * cos(pitch);
+    float heading = 180 * atan2(yh, xh) / PI;
 
-  if (yh >= 0) {
-    return heading;
-  } else {
-    return (360 + heading);
-  }
+    if (yh >= 0) {
+        return heading;
+    } else {
+        return (360 + heading);
+    }
 }
 
 LSM303D Lsm303d;
