@@ -1,4 +1,4 @@
-## Grove_6Axis_Accelerometer_And_Compass
+## Grove_6Axis_Accelerometer_And_Compass  [![Build Status](https://travis-ci.com/Seeed-Studio/Grove_6Axis_Accelerometer_And_Compass_v2.svg?branch=master)](https://travis-ci.com/Seeed-Studio/Grove_6Axis_Accelerometer_And_Compass_v2)
 
 <img src=https://statics3.seeedstudio.com/product/101020081%201_01.jpg width=300> <img src=https://statics3.seeedstudio.com/product/101020081%201_02.jpg width=300>
 
